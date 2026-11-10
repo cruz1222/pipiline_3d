@@ -198,7 +198,7 @@ function renderizar() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // 4. Dibujar ejes cartesianos de guía
-    ctx.strokeStyle = '#334155';
+    ctx.strokeStyle = 'rgba(201, 169, 97, 0.18)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(CENTRO_X, 0); ctx.lineTo(CENTRO_X, canvas.height);
@@ -229,9 +229,9 @@ function renderizar() {
 
     // 8. Renderizar vértices: color ámbar/dorado, radio proporcional a la perspectiva
     for (let p of vertices2D) {
-        ctx.fillStyle = '#fbbf24';
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1;
+        ctx.fillStyle = '#f3ede2';
+        ctx.strokeStyle = '#c9a961';
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.arc(p.x, p.y, Math.max(2, 4.5 * p.factor), 0, Math.PI * 2);
         ctx.fill();
@@ -239,12 +239,13 @@ function renderizar() {
     }
 }
 
-// Paleta propia: violeta (lejos) -> magenta/rosa (cerca)
+// Paleta elegante: oro oscuro (lejos) -> champán brillante (cerca)
 function colorPorProfundidad(factor) {
     let t = Math.min(1, Math.max(0, (factor - 0.6) / 0.9)); // normaliza ~[0,1]
-    let hue = 260 + t * 80;                                  // 260 (violeta) a 340 (rosa)
-    let luz = 55 + t * 15;
-    return 'hsl(' + hue + ', 90%, ' + luz + '%)';
+    let hue = 38 + t * 8;
+    let sat = 45 + t * 25;
+    let luz = 38 + t * 40;
+    return 'hsl(' + hue + ', ' + sat + '%, ' + luz + '%)';
 }
 
 // ==============================================================================
@@ -271,7 +272,7 @@ function animar(tiempoActual) {
 btnAuto.addEventListener('click', () => {
     autoRotando = !autoRotando;
     btnAuto.classList.toggle('activo', autoRotando);
-    btnAuto.innerText = autoRotando ? '⏸ Detener auto-rotación' : '▶ Auto-rotación (Yaw)';
+    btnAuto.innerText = autoRotando ? '⏸ Detener' : '▶ Auto-rotación';
     if (autoRotando) {
         anguloY = parseFloat(sliderRy.value);
         tiempoPrevio = performance.now();
@@ -281,6 +282,18 @@ btnAuto.addEventListener('click', () => {
 
 // Si el usuario mueve el deslizador Yaw manualmente, se sincroniza el ángulo interno
 sliderRy.addEventListener('input', () => { anguloY = parseFloat(sliderRy.value); });
+
+// BOTÓN RESETEAR: detiene la auto-rotación y regresa todos los deslizadores a su valor inicial
+document.getElementById('btnReset').addEventListener('click', () => {
+    autoRotando = false;
+    btnAuto.classList.remove('activo');
+    btnAuto.innerText = '▶ Auto-rotación';
+    document.querySelectorAll('input[type=range]').forEach(input => {
+        input.value = input.defaultValue;
+    });
+    anguloY = parseFloat(sliderRy.value);
+    renderizar();
+});
 
 // Selector de figura
 document.getElementById('selectorFigura').addEventListener('change', e => cambiarFigura(e.target.value));

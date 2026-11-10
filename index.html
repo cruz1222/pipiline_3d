@@ -1,37 +1,96 @@
 <!DOCTYPE html>
+<!--
+    =====================================================================
+    PRÁCTICA: Pipeline 3D (Vértices, Aristas y Proyección Perspectiva)
+    Unidad 3: Graficación y Transformaciones 3D
+    
+-->
 <html lang="es">
 <head>
+    <!-- Codificación de caracteres: permite acentos, ñ y símbolos (°, ↺, ▶) -->
     <meta charset="UTF-8">
+    <!-- Hace que la página se adapte al ancho de pantallas de celular/tablet -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Unidad 3: Graficación y Transformaciones 3D</title>
-    <!-- Vinculación del archivo de estilos -->
+
+    <!--
+        Tipografías elegantes de Google Fonts:
+          - Cormorant Garamond (serif) para títulos y valores numéricos
+          - Montserrat (sans-serif) para etiquetas y botones
+        Si no hay internet, styles.css usa fuentes de respaldo (Georgia, Segoe UI).
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <!-- Vinculación del archivo de estilos (paleta negro / oro / marfil) -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <!-- Contenedor del Lienzo de Dibujo -->
+    <!-- =============================================================
+         CONTENEDOR DEL LIENZO DE DIBUJO
+         script.js obtiene este <canvas> por su id ("lienzo3D") y dibuja
+         aquí las aristas y los vértices ya proyectados a 2D.
+         El tamaño 600x500 define CENTRO_X = 300 y CENTRO_Y = 250.
+         ============================================================= -->
     <div id="canvas-container">
         <canvas id="lienzo3D" width="600" height="500"></canvas>
     </div>
 
-    <!-- Panel Lateral de Controles Interactivos -->
+    <!-- =============================================================
+         PANEL DE CONTROLES INTERACTIVOS (debajo del lienzo)
+         Usa una cuadrícula CSS de 3 columnas: cada sección tiene sus
+         3 deslizadores en una fila. En celular pasa a 1 columna.
+         Cada deslizador (<input type="range">) tiene un id que script.js
+         lee en renderizar(); cada <span class="val"> muestra su valor actual.
+         ============================================================= -->
     <div class="panel">
         <h2>Unidad 3: Graficación 3D</h2>
 
-        <!-- SELECTOR DE FIGURA + AUTO-ROTACIÓN -->
+        <!-- ---------------------------------------------------------
+             PARTE 1: SELECTOR DE FIGURA 3D
+             Cada <option> usa como value la clave de la figura dentro
+             del catálogo "figuras" de script.js. Al cambiar la selección
+             se llama a cambiarFigura(clave), que carga los vértices y la
+             matriz de aristas de esa figura.
+             --------------------------------------------------------- -->
         <h3>Figura 3D</h3>
-        <div class="control-group">
+        <div class="control-group completo"><!-- "completo": ocupa todo el ancho del panel -->
             <select id="selectorFigura">
+                <!-- Figura original: 8 vértices, 12 aristas -->
                 <option value="cubo">Cubo (8 vértices, 12 aristas)</option>
+                <!-- Opción A: base cuadrada (4 vértices) + ápice = 5 V; 4 base + 4 laterales = 8 A -->
                 <option value="piramide">A) Pirámide base cuadrada (5 V, 8 A)</option>
+                <!-- Opción B: 2 triángulos (6 V); 3 + 3 + 3 longitudinales = 9 A -->
                 <option value="prisma">B) Prisma triangular (6 V, 9 A)</option>
+                <!-- Opción C: 6 vértices sobre los ejes ±X, ±Y, ±Z; 12 aristas -->
                 <option value="octaedro">C) Octaedro (6 V, 12 A)</option>
             </select>
         </div>
-        <button id="btnAutoRotar" type="button">▶ Auto-rotación (Yaw)</button>
+
+        <!-- ---------------------------------------------------------
+             BOTONES DE ACCIÓN
+             - btnAutoRotar: RETO. Activa/desactiva la rotación continua
+               sobre el eje Y (Yaw) usando requestAnimationFrame.
+             - btnReset: detiene la auto-rotación y regresa todos los
+               deslizadores a su valor inicial (el atributo "value").
+             --------------------------------------------------------- -->
+        <div class="botones">
+            <button id="btnAutoRotar" type="button">▶ Auto-rotación</button>
+            <button id="btnReset" type="button" class="secundario">↺ Resetear</button>
+        </div>
+
+        <!-- Texto informativo: script.js escribe aquí el nombre de la figura
+             activa y su cantidad de vértices y aristas -->
         <div class="info" id="infoFigura"></div>
-        
-        <!-- 3.3.1 TRASLACIÓN -->
+
+        <!-- ---------------------------------------------------------
+             3.3.1 TRASLACIÓN (Tx, Ty, Tz)
+             Desplaza la figura sobre los ejes X, Y, Z (rango -200 a 200).
+             En el pipeline se aplica DESPUÉS de rotar (ver pregunta 2
+             del reporte: el orden de las transformaciones importa).
+             --------------------------------------------------------- -->
         <h3>3.3.1 Traslación (Tx, Ty, Tz)</h3>
         <div class="control-group">
             <label>Traslación X (Tx): <span id="valTx" class="val">0</span></label>
@@ -46,7 +105,11 @@
             <input type="range" id="tz" min="-200" max="200" value="0">
         </div>
 
-        <!-- 3.3.2 ESCALAMIENTO -->
+        <!-- ---------------------------------------------------------
+             3.3.2 ESCALAMIENTO (Sx, Sy, Sz)
+             Multiplica cada coordenada por un factor (0.2 a 3, paso 0.1).
+             Valor 1 = tamaño original.
+             --------------------------------------------------------- -->
         <h3>3.3.2 Escalamiento (Sx, Sy, Sz)</h3>
         <div class="control-group">
             <label>Escala X (Sx): <span id="valSx" class="val">1.0</span></label>
@@ -61,7 +124,11 @@
             <input type="range" id="sz" min="0.2" max="3" step="0.1" value="1">
         </div>
 
-        <!-- 3.3.3 ROTACIÓN -->
+        <!-- ---------------------------------------------------------
+             3.3.3 ROTACIÓN (Rx, Ry, Rz) en grados (-180° a 180°)
+               Rx = Pitch (cabeceo), Ry = Yaw (guiñada), Rz = Roll (alabeo)
+             El deslizador "ry" también lo mueve la auto-rotación.
+             --------------------------------------------------------- -->
         <h3>3.3.3 Rotación (Rx, Ry, Rz)</h3>
         <div class="control-group">
             <label>Rotación X (Pitch): <span id="valRx" class="val">20°</span></label>
@@ -76,7 +143,11 @@
             <input type="range" id="rz" min="-180" max="180" value="0">
         </div>
 
-        <!-- 3.3.4 SESGADO -->
+        <!-- ---------------------------------------------------------
+             3.3.4 SESGADO / SHEAR (Sh-XY, Sh-XZ)
+             Inclina la figura: desplaza X en proporción a Y (XY) o a Z (XZ).
+             Valor 0 = sin sesgado.
+             --------------------------------------------------------- -->
         <h3>3.3.4 Sesgado / Shear (Sh-XY, Sh-XZ)</h3>
         <div class="control-group">
             <label>Sesgado XY: <span id="valShXY" class="val">0.0</span></label>
@@ -88,7 +159,8 @@
         </div>
     </div>
 
-    <!-- Vinculación del script principal al final del body -->
+    <!-- Vinculación del script principal al final del body: así el canvas y los
+         controles ya existen en el DOM cuando script.js los busca por su id -->
     <script src="script.js"></script>
 </body>
 </html>
